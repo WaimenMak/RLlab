@@ -49,22 +49,23 @@ def read_data(embedding_dim = 20):
 
 
 def embedding_dict():
-	item_info = pd.read_csv('./bigdata2021-rl-recsys/item_info.csv', sep = ' ')
-	info_size = len(item_info)
-	for i in range(info_size):
-	    item_info.loc[i, 'item_vec_num'] = item_info.loc[i, 'item_vec'] + ','+ str(item_info.loc[i,'price']) + ',' + str(item_info.loc[i,'location'])
+	# item_info = pd.read_csv('./bigdata2021-rl-recsys/item_info.csv', sep = ' ')
+	# info_size = len(item_info)
+	# for i in range(info_size):
+	#     item_info.loc[i, 'item_vec_num'] = item_info.loc[i, 'item_vec'] + ','+ str(item_info.loc[i,'price']) + ',' + str(item_info.loc[i,'location'])
 
-	item_info['item_vec_num'] = item_info['item_vec_num'].apply(
-		lambda row: np.array(list(map(lambda t: float(t), row.split(','))))
-		)
-	embed_vec = np.array(item_info['item_vec_num'].values.tolist(), dtype = float)
-	keys = [str(item) for item in item_info['item_id']]
-	# from sklearn.preprocessing import MinMaxScaler
-	from sklearn.preprocessing import StandardScaler
-	# embed_vec = MinMaxScaler().fit_transform(embed_vec)
-	embed_vec = StandardScaler().fit_transform(embed_vec)
-	embed = dict(zip(keys, embed_vec))
-	embed['0'] = np.zeros([embed_vec.shape[1]])  #新增0元素
+	# item_info['item_vec_num'] = item_info['item_vec_num'].apply(
+	# 	lambda row: np.array(list(map(lambda t: float(t), row.split(','))))
+	# 	)
+	# embed_vec = np.array(item_info['item_vec_num'].values.tolist(), dtype = float)
+	# keys = [str(item) for item in item_info['item_id']]
+	# # from sklearn.preprocessing import MinMaxScaler
+	# from sklearn.preprocessing import StandardScaler
+	# # embed_vec = MinMaxScaler().fit_transform(embed_vec)
+	# embed_vec = StandardScaler().fit_transform(embed_vec)
+	# embed = dict(zip(keys, embed_vec))
+	# embed['0'] = np.zeros([embed_vec.shape[1]])  #新增0元素
+	embed = np.load('embed_dict.npy', allow_pickle=True).item()
 
 	return embed
 
