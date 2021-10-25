@@ -1,62 +1,21 @@
-import gym
-from torch import nn
+# -*- coding: utf-8 -*-
+# @Time    : 2021/10/25 14:42
+# @Author  : Weiming Mai
+# @FileName: agent.py
+# @Software: PyCharm
+import numpy as np
 from torch.nn.utils import clip_grad_norm_
 import torch
-import torch.nn.functional as F
-import numpy as np
+from torch import nn
+from Utils.Memory import replay_buffer
+from Network import MLP
 import torch.optim as optim
-from collections import deque
-import random
 
 def try_gpu(): #single gpu
     i = 0
     if torch.cuda.device_count() >= i + 1:
         return torch.device(f'cuda:{i}')
     return torch.device('cpu')
-
-
-class MLP(nn.Module):
-    def __init__(self, state_dim, action_dim):
-        super(MLP, self).__init__()
-        self.fc1 = nn.Linear(state_dim, 128)
-        self.fc2 = nn.Linear(128, 128)
-        self.fc3 = nn.Linear(128, action_dim)
-
-    def forward(self, x):
-        l1 = F.relu(self.fc1(x))
-        l2 = F.relu(self.fc2(l1))
-        output = self.fc3(l2)
-
-        return output
-
-
-class replay_buffer():
-    def __init__(self, capacity):
-        self.buffer = deque()
-        self.capacity = capacity
-        self.count = 0
-
-    def add(self, state, action, reward, n_state, done):  # done: whether the final state, TD error would be different.
-        experience = (state, action, reward, n_state, done)
-        if len(self.buffer) < self.capacity:
-            self.buffer.append(experience)
-            self.count += 1
-        else:
-            self.buffer.popleft()
-            self.buffer.append(experience)
-
-    def sample(self, batch_size):  # return a tuple
-        batch = random.sample(self.buffer, batch_size)  # a list [(s,a,r,s), ...]
-        return zip(*batch)
-
-    #         return batch
-
-    def clear(self):
-        self.buffer.clear()
-        self.count = 0
-
-    def __len__(self):
-        return len(self.buffer)
 
 class DQN():
     def __init__(self, state_dim, action_dim, epsilon, batch_size, capacity, gamma, lr):
@@ -114,46 +73,10 @@ class DQN():
             n_state_batch, device=self.device, dtype=torch.float)
         done_batch = torch.tensor(np.float32(done_batch), device=self.device, dtype=torch.float).view(-1, 1)
         current_q_val = self.policy_net(state_batch).gather(dim=1, index=action_batch)  # Q(s,a)
-        max_target_q_val = self.target_net(state_batch).detach().view(-1, 1)
+        max_target_q_val = self.target_net(n_state_batch).max(1)[0].detach().view(-1, 1)         # detach the gradient
         y_hat = reward_batch + self.gamma * max_target_q_val * (1 - done_batch)
         loss = self.loss_fn(current_q_val, y_hat)
         self.optimizer.zero_grad()
         loss.backward()
-        #         clip_grad_norm_(self.policy_net.parameters(), max_norm=20, norm_type=2)
+        clip_grad_norm_(self.policy_net.parameters(), max_norm=20, norm_type=2)
         self.optimizer.step()
-
-
-env = gym.make('CartPole-v0')
-state_dim = env.observation_space.shape[0]  # 4
-action_dim = env.action_space.n  # 2
-epsilon = 0.01
-batch_size = 64
-gamma = 0.99
-lr = 0.01
-episode_num = 500
-capacity = 10000
-agent = DQN(state_dim, action_dim, epsilon, batch_size, capacity, gamma, lr)
-return_list = []
-C_iter = 5
-
-for i_ep in range(episode_num):
-    state = env.reset()
-    done = False
-    ep_reward = 0
-    #     print(state)
-    while True:
-        action = agent.choose_action(state)
-        n_state, reward, done, _ = env.step(action)
-        ep_reward += reward
-        agent.memory.add(state, action, reward, n_state, done)
-        agent.UpdateQ()
-        state = n_state
-        #         print(n_state, action)
-        if done == True:
-            break
-    if i_ep % C_iter == 0:
-        agent.UpdateTarget()
-
-    if i_ep % 10 == 0:
-        print(ep_reward)
-    return_list.append(ep_reward)
