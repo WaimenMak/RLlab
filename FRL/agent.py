@@ -11,19 +11,16 @@ from Utils.Memory import replay_buffer
 from Network import MLP
 import torch.optim as optim
 
-def try_gpu(): #single gpu
-    i = 0
-    if torch.cuda.device_count() >= i + 1:
-        return torch.device(f'cuda:{i}')
-    return torch.device('cpu')
+
+
 
 class DQN():
-    def __init__(self, state_dim, action_dim, epsilon, batch_size, capacity, gamma, lr):
+    def __init__(self, state_dim, action_dim, epsilon, batch_size, capacity, gamma, lr, device):
         self.state_dim = state_dim
         self.action_dim = action_dim
         self.gamma = gamma
         self.epsilon = epsilon  # could be enhance
-        self.device = try_gpu()
+        self.device = device
         self.memory = replay_buffer(capacity)
         self.batch_size = batch_size
         self.policy_net = MLP(state_dim, action_dim).to(self.device)
@@ -80,3 +77,10 @@ class DQN():
         loss.backward()
         clip_grad_norm_(self.policy_net.parameters(), max_norm=20, norm_type=2)
         self.optimizer.step()
+
+    def save(self, PATH):
+        torch.save(self.target_net.state_dict(), PATH + 'dqn_checkpoint.pth')
+
+    def load(self, PATH):
+        self.policy_net.load_state_dict(torch.load(PATH + 'dqn_checkpoint.pth'))
+        self.target_net.load_state_dict(self.policy_net.state_dict())
