@@ -1,18 +1,20 @@
 # -*- coding: utf-8 -*-
 # @Time    : 2021/10/25 14:42
 # @Author  : Weiming Mai
-# @FileName: agent.py
+# @FileName: DQN.py
 # @Software: PyCharm
+
+import os
+import random
 
 import gym
 import numpy as np
+import pynvml
 import torch
-import random
-from agent import DQN
 from sacred import Experiment
 from sacred.observers import MongoObserver
-import pynvml
-import os
+
+from agents.DQN import DQN
 
 #save model
 model_path = 'outputs/model/'
@@ -20,7 +22,7 @@ if not os.path.exists(model_path):
     os.makedirs(model_path)
 
 
-ex = Experiment("dqn_Cartpole")
+ex = Experiment("dqn_Cartpole")  #name of the experiment
 observer_mongo = MongoObserver(url='localhost:27017', db_name='DRL')
 ex.observers.append(observer_mongo)
 # ex.observers.append(MongoObserver.create(url='localhost:27017',
@@ -41,9 +43,9 @@ def set_seed(seed):
 
 def print_memory():
     pynvml.nvmlInit()
-    handle = pynvml.nvmlDeviceGetHandleByIndex(0)
-    meminfo = pynvml.nvmlDeviceGetMemoryInfo(handle)
-    return meminfo
+    handle = pynvml.nvmlDeviceGetHandleByIndex(0)  #GPU 0
+    info = pynvml.nvmlDeviceGetMemoryInfo(handle)
+    return info
 
 @ex.config
 def Config():
@@ -63,6 +65,21 @@ def Config():
     predict_seed = 10
     show_memory = False
     seed = 1
+
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument('--epsilon', type=float, default=0.01, help="epsilon")
+    # parser.add_argument('--batch_size', type=int, default=64, help="train batch size")
+    # parser.add_argument('--gamma', type=float, default=0.98, help="gamma")
+    # parser.add_argument('--lr', type=float, default=0.002, help="learning rate")
+    # parser.add_argument('--episode_num', type=int, default=200, help="train episode")
+    # parser.add_argument('--eval_episode', type=int, default=30, help="eval episode")
+    # parser.add_argument('--capacity', type=int, default=10000, help="memory capacity")
+    # parser.add_argument('--C_iter', type=int, default=5, help="update target net")
+    # parser.add_argument('--train_seed', type=int, default=1, help="train seed")
+    # parser.add_argument('--predict_seed', type=int, default=10, help="predict seed")
+    # parser.add_argument('--show_memory', action = 'store_true', help="print memory")
+    # parser.add_argument('--seed', type=int, default=1, help="seed")
+    # args = parser.parse_args()
 
 def eval(agent, env, eval_episode, name):
 
@@ -123,6 +140,7 @@ def env_config(train_seed):
 
 @ex.automain
 def main(epsilon, batch_size, gamma, lr, episode_num, eval_episode, capacity, C_iter, train_seed, predict_seed, show_memory):
+    #show the info of the memory of GPU
     memory = None
     state_dim, action_dim, env = env_config(train_seed)
     device = try_gpu()
