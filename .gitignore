@@ -3,5 +3,7 @@ RLRS/bigdata2021-rl-recsys
 RLRS/drl-rec-master
 RLRS/__pycache__
 RLRS/processed_train.csv
-FRL/.idea
+*.idea
 FRL/__pycache__
+*.DS_Store
+
