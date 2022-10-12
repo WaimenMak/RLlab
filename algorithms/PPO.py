@@ -99,7 +99,7 @@ if __name__ == "__main__":
         "cpu")
     # device = torch.device("mps")
 
-    env_name = 'CartPole-v0'
+    env_name = 'CartPole-v1'
     env = gym.make(env_name)
     env.seed(0)
     torch.manual_seed(0)
